@@ -1,0 +1,46 @@
+# Flutter/Dart/Pub related
+.dart_tool/
+.packages
+.buildlog/
+.flutter-plugins
+.flutter-plugins-dependencies
+.generated/
+.melos_tool/
+pubspec.lock
+.metadata
+
+# IntelliJ / Android Studio
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# Flutter build outputs
+build/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/.generated/
+macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Android
+android/.gradle/
+android/captures/
+android/local.properties
+android/app/release/
+*.keystore
+
+# Web
+web/.dart_tool/
+
+# Others
+*.log
+*.lock
+*.swp
+.metadata
+
+# Windows / Linux / macOS build outputs
+windows/runner/Release/
+windows/runner/Debug/
+linux/runner/Release/
+linux/runner/Debug/
