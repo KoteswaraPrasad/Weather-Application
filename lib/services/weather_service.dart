@@ -5,43 +5,60 @@ import '../utils/constants.dart';
 import '../models/weather_model.dart';
 
 class WeatherService {
-  // Get weather for a specific city
+  // Get REAL weather for a city
   static Future<WeatherData> getCityWeather(String cityName) async {
+    final apiKey = AppConstants.openWeatherApiKey;
+
+    if (apiKey.isEmpty) {
+      throw Exception('API key not configured. Check .env file.');
+    }
+
     final response = await http.get(
       Uri.parse(
-          '${AppConstants.openWeatherBaseUrl}/weather?q=$cityName&appid=${AppConstants.openWeatherApiKey}&units=metric'
+          '${AppConstants.openWeatherBaseUrl}/weather?q=$cityName&appid=$apiKey&units=metric'
       ),
     );
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return WeatherData.fromApiJson(data);
+    } else if (response.statusCode == 404) {
+      throw Exception('City "$cityName" not found');
     } else {
-      throw Exception('Failed to load weather for $cityName');
+      throw Exception('API Error ${response.statusCode}: ${response.body}');
     }
   }
 
-  // UNIQUE FEATURE: Get weather for current location
+  // Get REAL weather for current location
   static Future<WeatherData> getCurrentLocationWeather() async {
-    // Check and request location permission
+    // Check permissions
     LocationPermission permission = await Geolocator.checkPermission();
 
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        throw Exception('Location permission denied. Please enable location services.');
+        throw Exception('Location permission denied');
       }
     }
 
-    // Get current position
+    if (permission == LocationPermission.deniedForever) {
+      throw Exception('Location permanently denied. Enable in settings.');
+    }
+
+    // Get position
     Position position = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.medium,
     );
 
-    // Fetch weather for coordinates
+    final apiKey = AppConstants.openWeatherApiKey;
+
+    if (apiKey.isEmpty) {
+      throw Exception('API key not configured');
+    }
+
     final response = await http.get(
       Uri.parse(
-          '${AppConstants.openWeatherBaseUrl}/weather?lat=${position.latitude}&lon=${position.longitude}&appid=${AppConstants.openWeatherApiKey}&units=metric'
+          '${AppConstants.openWeatherBaseUrl}/weather?lat=${position.latitude}&lon=${position.longitude}&appid=$apiKey&units=metric'
       ),
     );
 
@@ -49,7 +66,7 @@ class WeatherService {
       final data = json.decode(response.body);
       return WeatherData.fromApiJson(data, isCurrentLocation: true);
     } else {
-      throw Exception('Failed to load weather for your location');
+      throw Exception('Failed to get location weather: ${response.statusCode}');
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConstants {
+  // Get API key securely from environment
   static String get openWeatherApiKey {
     return dotenv.env['OPENWEATHER_API_KEY'] ?? '';
   }

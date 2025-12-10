@@ -1,34 +1,17 @@
 name: animation
-description: "A weather app with real API and unique features"
+description: "Weather App"
 publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.8.1
+  sdk: ">=3.8.1 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
-
-  # 🔥 API & WEATHER PACKAGES 🔥
-  http: ^1.2.0                    # For API calls
-  geolocator: ^11.0.0             # For live location (UPDATED to ^11.0.0)
-
-  # 🎨 UI & FEATURES
-  intl: ^0.19.0                   # For date/time formatting
-  flutter_spinkit: ^5.2.0         # Beautiful loading animations
-  shared_preferences: ^2.2.2      # Save user preferences
-  flutter_dotenv: ^6.0.0
-
-  # ⚠️ REMOVED (Optional - add later if needed):
-  # charts_flutter: ^0.12.0       # Heavy package - add after basic features work
-  # weather_icons: ^3.0.0         # Alternative icons - Material icons work fine
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^5.0.0
+  http: ^1.2.0
+  flutter_spinkit: ^5.2.0
+  geolocator: ^11.0.0  # For live location
 
 flutter:
   uses-material-design: true
