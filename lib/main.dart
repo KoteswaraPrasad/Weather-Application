@@ -1,325 +1,414 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'services/weather_service.dart';
+import 'models/weather_model.dart';
+import 'widgets/weather_card.dart';
+import 'utils/constants.dart';
 
-void main() => runApp(WeatherApp());
+void main() {
+  runApp(MyWeatherApp());
+}
 
-class WeatherApp extends StatelessWidget {
+class MyWeatherApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: WeatherScreen(),
+      title: 'Live Weather Pro',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      home: WeatherHomeScreen(),
     );
   }
 }
 
-class WeatherScreen extends StatefulWidget {
+class WeatherHomeScreen extends StatefulWidget {
   @override
-  _WeatherScreenState createState() => _WeatherScreenState();
+  _WeatherHomeScreenState createState() => _WeatherHomeScreenState();
 }
 
-class _WeatherScreenState extends State<WeatherScreen> {
-  bool _isCelsius = true;
+class _WeatherHomeScreenState extends State<WeatherHomeScreen> {
+  List<WeatherData> _weatherList = [];
+  bool _isLoading = true;
+  String _errorMessage = '';
   String _searchQuery = '';
-  Map<String, dynamic>? _selectedCity;
 
-  // Static weather data
-  final List<Map<String, dynamic>> _cities = [
-    {
-      "name": "Yellareddy",
-      "currentTemp": 25,
-      "condition": "Cloudy",
-      "highLow": "29° / 24°",
-      "feelsLike": 25,
-      "hourlyForecast": [
-        {"time": "9:30 pm", "temp": 25, "precip": 6},
-        {"time": "10:30 pm", "temp": 25, "precip": 6},
-        {"time": "11:30 pm", "temp": 25, "precip": 7},
-        {"time": "12:30 am", "temp": 25, "precip": 9},
-        {"time": "1:30 am", "temp": 25, "precip": 10},
-      ],
-      "tomorrow": {"condition": "Cloudy", "high": 30},
-      "yesterday": {"high": 29, "low": 24},
-      "color": Colors.blueGrey,
-      "icon": Icons.cloud,
-    },
-    {
-      "name": "Delhi",
-      "currentTemp": 32,
-      "condition": "Sunny",
-      "highLow": "35° / 28°",
-      "feelsLike": 34,
-      "hourlyForecast": [
-        {"time": "9:30 pm", "temp": 31, "precip": 2},
-        {"time": "10:30 pm", "temp": 30, "precip": 2},
-        {"time": "11:30 pm", "temp": 29, "precip": 3},
-        {"time": "12:30 am", "temp": 28, "precip": 4},
-        {"time": "1:30 am", "temp": 28, "precip": 5},
-      ],
-      "tomorrow": {"condition": "Partly Cloudy", "high": 36},
-      "yesterday": {"high": 34, "low": 27},
-      "color": Colors.orange,
-      "icon": Icons.wb_sunny,
-    },
-    {
-      "name": "Hyderabad",
-      "currentTemp": 28,
-      "condition": "Partly Cloudy",
-      "highLow": "31° / 26°",
-      "feelsLike": 29,
-      "hourlyForecast": [
-        {"time": "9:30 pm", "temp": 28, "precip": 10},
-        {"time": "10:30 pm", "temp": 27, "precip": 15},
-        {"time": "11:30 pm", "temp": 27, "precip": 20},
-        {"time": "12:30 am", "temp": 26, "precip": 25},
-        {"time": "1:30 am", "temp": 26, "precip": 30},
-      ],
-      "tomorrow": {"condition": "Rainy", "high": 30},
-      "yesterday": {"high": 32, "low": 25},
-      "color": Colors.blue,
-      "icon": Icons.cloud_queue,
-    },
-    {
-      "name": "Bengaluru",
-      "currentTemp": 22,
-      "condition": "Rainy",
-      "highLow": "25° / 20°",
-      "feelsLike": 21,
-      "hourlyForecast": [
-        {"time": "9:30 pm", "temp": 22, "precip": 60},
-        {"time": "10:30 pm", "temp": 22, "precip": 65},
-        {"time": "11:30 pm", "temp": 21, "precip": 70},
-        {"time": "12:30 am", "temp": 21, "precip": 75},
-        {"time": "1:30 am", "temp": 20, "precip": 80},
-      ],
-      "tomorrow": {"condition": "Rainy", "high": 24},
-      "yesterday": {"high": 26, "low": 19},
-      "color": Colors.indigo,
-      "icon": Icons.umbrella,
-    },
-    {
-      "name": "Mumbai",
-      "currentTemp": 30,
-      "condition": "Humid",
-      "highLow": "32° / 28°",
-      "feelsLike": 33,
-      "hourlyForecast": [
-        {"time": "9:30 pm", "temp": 30, "precip": 40},
-        {"time": "10:30 pm", "temp": 30, "precip": 45},
-        {"time": "11:30 pm", "temp": 29, "precip": 50},
-        {"time": "12:30 am", "temp": 29, "precip": 55},
-        {"time": "1:30 am", "temp": 28, "precip": 60},
-      ],
-      "tomorrow": {"condition": "Thunderstorm", "high": 31},
-      "yesterday": {"high": 33, "low": 27},
-      "color": Colors.deepPurple,
-      "icon": Icons.grain,
-    },
-    {
-      "name": "Kolkata",
-      "currentTemp": 31,
-      "condition": "Hazy",
-      "highLow": "33° / 29°",
-      "feelsLike": 34,
-      "hourlyForecast": [
-        {"time": "9:30 pm", "temp": 31, "precip": 20},
-        {"time": "10:30 pm", "temp": 31, "precip": 25},
-        {"time": "11:30 pm", "temp": 30, "precip": 30},
-        {"time": "12:30 am", "temp": 30, "precip": 35},
-        {"time": "1:30 am", "temp": 29, "precip": 40},
-      ],
-      "tomorrow": {"condition": "Foggy", "high": 32},
-      "yesterday": {"high": 34, "low": 28},
-      "color": Colors.brown,
-      "icon": Icons.filter_drama,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadAllWeather();
+  }
 
-  // Get filtered cities based on search query
-  List<Map<String, dynamic>> get _filteredCities {
-    if (_searchQuery.isEmpty) {
-      return _cities;
+  Future<void> _loadAllWeather() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
+    try {
+      List<WeatherData> loadedWeather = [];
+
+      // Try to get current location weather
+      try {
+        final locationWeather = await WeatherService.getCurrentLocationWeather();
+        loadedWeather.add(locationWeather);
+      } catch (e) {
+        print('Could not get location: $e');
+      }
+
+      // Get weather for default cities
+      for (String city in AppConstants.defaultCities) {
+        try {
+          final weather = await WeatherService.getCityWeather(city);
+          loadedWeather.add(weather);
+        } catch (e) {
+          print('Failed to load $city: $e');
+        }
+      }
+
+      setState(() {
+        _weatherList = loadedWeather;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load weather data: $e';
+        _isLoading = false;
+      });
     }
-    return _cities.where((city) {
-      return city["name"].toLowerCase().contains(_searchQuery.toLowerCase());
+  }
+
+  List<WeatherData> get _filteredWeather {
+    if (_searchQuery.isEmpty) return _weatherList;
+    return _weatherList.where((weather) {
+      return weather.cityName.toLowerCase().contains(_searchQuery.toLowerCase());
     }).toList();
   }
 
-  // Convert Celsius to Fahrenheit
-  double _convertCtoF(double celsius) {
-    return (celsius * 9 / 5) + 32;
+  Widget _buildLoadingScreen() {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SpinKitFadingCircle(
+              color: Colors.blue,
+              size: 50.0,
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Fetching live weather...',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            SizedBox(height: 10),
+            Text(
+              '📍 Detecting your location',
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  // Format temperature based on current unit
-  String _formatTemp(double temp) {
-    return _isCelsius ? '${temp.round()}°C' : '${_convertCtoF(temp).round()}°F';
+  Widget _buildErrorScreen() {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.red),
+              SizedBox(height: 20),
+              Text(
+                'Error Loading Weather',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 10),
+              Text(
+                _errorMessage,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+              SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: _loadAllWeather,
+                child: Text('Try Again'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
-  // Format high/low temperature pair
-  String _formatHighLow(double high, double low) {
-    if (_isCelsius) {
-      return '${high.round()}° / ${low.round()}°';
-    } else {
-      return '${_convertCtoF(high).round()}° / ${_convertCtoF(low).round()}°';
+  Widget _buildWeatherList() {
+    if (_filteredWeather.isEmpty) {
+      return Center(
+        child: Text(
+          'No cities found',
+          style: TextStyle(fontSize: 18, color: Colors.grey),
+        ),
+      );
     }
+
+    return RefreshIndicator(
+      onRefresh: _loadAllWeather,
+      child: ListView.builder(
+        padding: EdgeInsets.only(bottom: 80),
+        itemCount: _filteredWeather.length,
+        itemBuilder: (context, index) {
+          final weather = _filteredWeather[index];
+          return WeatherCard(
+            weather: weather,
+            onTap: () {
+              _showWeatherDetails(weather);
+            },
+          );
+        },
+      ),
+    );
   }
 
-  void _toggleTempUnit() {
-    setState(() {
-      _isCelsius = !_isCelsius;
-    });
+  void _showWeatherDetails(WeatherData weather) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.9,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+              ),
+              child: ListView(
+                controller: scrollController,
+                children: [
+                  // Header with city name
+                  Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        Image.network(
+                          'http://openweathermap.org/img/wn/${weather.iconCode}@4x.png',
+                          width: 80,
+                          height: 80,
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                weather.cityName,
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                weather.description,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Temperature highlight
+                  Center(
+                    child: Text(
+                      '${weather.currentTemp.round()}°C',
+                      style: TextStyle(
+                        fontSize: 64,
+                        fontWeight: FontWeight.w300,
+                      ),
+                    ),
+                  ),
+                  Center(
+                    child: Text(
+                      'Feels like ${weather.feelsLike.round()}°C',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+
+                  Divider(height: 40),
+
+                  // Weather details grid
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: GridView.count(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      crossAxisCount: 2,
+                      childAspectRatio: 2.5,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      children: [
+                        _buildDetailItem('High', '${weather.tempMax.round()}°C', Icons.arrow_upward),
+                        _buildDetailItem('Low', '${weather.tempMin.round()}°C', Icons.arrow_downward),
+                        _buildDetailItem('Humidity', '${weather.humidity}%', Icons.water_drop),
+                        _buildDetailItem('Wind', '${weather.windSpeed.round()} km/h', Icons.air),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
-  void _showCityDetails(Map<String, dynamic> city) {
-    setState(() {
-      _selectedCity = city;
-    });
-  }
-
-  void _goBack() {
-    setState(() {
-      _selectedCity = null;
-    });
+  Widget _buildDetailItem(String title, String value, IconData icon) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.blue),
+          SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) return _buildLoadingScreen();
+    if (_errorMessage.isNotEmpty) return _buildErrorScreen();
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_selectedCity == null ? "Weather App" : _selectedCity!["name"]),
-        leading: _selectedCity != null
-            ? IconButton(icon: Icon(Icons.arrow_back), onPressed: _goBack)
-            : null,
+        title: Text('Live Weather Pro'),
+        backgroundColor: Theme.of(context).primaryColor,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(_isCelsius ? Icons.thermostat : Icons.thermostat_outlined),
-            onPressed: _toggleTempUnit,
-            tooltip: _isCelsius ? 'Switch to Fahrenheit' : 'Switch to Celsius',
+            icon: Icon(Icons.refresh),
+            onPressed: _loadAllWeather,
           ),
         ],
       ),
-      body: _selectedCity == null ? _buildCityList() : _buildCityDetails(),
-    );
-  }
-
-  Widget _buildCityList() {
-    return Column(
-      children: [
-        Padding(
-          padding: EdgeInsets.all(16),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: "Search cities...",
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
-            ),
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
-            },
-          ),
-        ),
-        Expanded(
-          child: _filteredCities.isEmpty
-              ? Center(
-            child: Text(
-              "No cities found",
-              style: TextStyle(fontSize: 18, color: Colors.grey),
-            ),
-          )
-              : ListView.builder(
-            itemCount: _filteredCities.length,
-            itemBuilder: (context, index) {
-              final city = _filteredCities[index];
-              return Card(
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: ListTile(
-                  leading: Icon(city["icon"], color: city["color"], size: 40),
-                  title: Text(city["name"], style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(city["condition"]),
-                  trailing: Text(
-                    _formatTemp(city["currentTemp"].toDouble()),
-                    style: TextStyle(fontSize: 24),
-                  ),
-                  onTap: () => _showCityDetails(city),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCityDetails() {
-    final city = _selectedCity!;
-    final highLow = city["highLow"].toString().split(" / ");
-    final high = double.parse(highLow[0].replaceAll("°", ""));
-    final low = double.parse(highLow[1].replaceAll("°", ""));
-
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: Column(
         children: [
-          // Current weather
-          Row(
-            children: [
-              Text(
-                _formatTemp(city["currentTemp"].toDouble()),
-                style: TextStyle(fontSize: 48),
+          // Search bar
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search cities...',
+                prefixIcon: Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.grey[100],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(25),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 20),
               ),
-              SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(city["condition"], style: TextStyle(fontSize: 18)),
-                  Text(_formatHighLow(high, low), style: TextStyle(color: Colors.grey)),
-                ],
-              ),
-            ],
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+            ),
           ),
-          SizedBox(height: 8),
-          Text("Feels like ${_formatTemp(city["feelsLike"].toDouble())}",
-              style: TextStyle(color: Colors.grey)),
-          SizedBox(height: 16),
 
-          // Hourly forecast
-          Text("Hourly Forecast", style: TextStyle(fontWeight: FontWeight.bold)),
-          SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          // Weather stats header
+          Container(
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              borderRadius: BorderRadius.circular(15),
+            ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                ...city["hourlyForecast"].map((hour) => Padding(
-                  padding: EdgeInsets.only(right: 16),
-                  child: Column(
-                    children: [
-                      Text(hour["time"]),
-                      SizedBox(height: 4),
-                      Text(_formatTemp(hour["temp"].toDouble())),
-                      SizedBox(height: 4),
-                      Text("${hour["precip"]}%"),
-                    ],
-                  ),
-                )),
+                _buildStatItem(Icons.location_on, '${_weatherList.length}', 'Cities'),
+                _buildStatItem(Icons.cloud, 'Live', 'Weather'),
+                _buildStatItem(Icons.update, 'Now', 'Updated'),
               ],
             ),
           ),
-          SizedBox(height: 24),
 
-          // Tomorrow's outlook
-          Text("Tomorrow's Outlook", style: TextStyle(fontWeight: FontWeight.bold)),
-          SizedBox(height: 8),
-          Text("${city["tomorrow"]["condition"]}. High of ${_formatTemp(city["tomorrow"]["high"].toDouble())}"),
-          SizedBox(height: 24),
-
-          // Yesterday
-          Text("Yesterday", style: TextStyle(fontWeight: FontWeight.bold)),
-          SizedBox(height: 8),
-          Text("H: ${_formatTemp(city["yesterday"]["high"].toDouble())} L: ${_formatTemp(city["yesterday"]["low"].toDouble())}"),
+          // Weather list
+          Expanded(child: _buildWeatherList()),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // TODO: Add city dialog
+        },
+        child: Icon(Icons.add_location),
+        backgroundColor: Theme.of(context).primaryColor,
+      ),
+    );
+  }
+
+  Widget _buildStatItem(IconData icon, String value, String label) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.blue, size: 28),
+        SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey,
+          ),
+        ),
+      ],
     );
   }
 }
