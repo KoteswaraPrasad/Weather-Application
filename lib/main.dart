@@ -4,8 +4,10 @@ import 'services/weather_service.dart';
 import 'models/weather_model.dart';
 import 'widgets/weather_card.dart';
 import 'utils/constants.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+Future<void> main() async {
+  await dotenv.load(fileName: ".env");
   runApp(MyWeatherApp());
 }
 
